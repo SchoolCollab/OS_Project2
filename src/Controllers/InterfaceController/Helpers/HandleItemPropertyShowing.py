@@ -14,7 +14,7 @@ from Controllers.InterfaceController.Data.InterfaceController_Data import (
 )
 
 
-def ItemPropertyShowingHandler(
+def HandleItemPropertyShowing(
     event: _INTERFACE_TYPES.Event, item: _INTERFACE_TYPES.ItemDrawInfo
 ) -> bool:
     """Handle property window showing event
@@ -36,7 +36,7 @@ def ItemPropertyShowingHandler(
 
         # Also check if any items' names are clicked
         for subItem in item.subItems:
-            if ItemPropertyShowingHandler(event, subItem):
+            if HandleItemPropertyShowing(event, subItem):
                 return True
 
         return False
@@ -58,4 +58,4 @@ def ItemPropertyShowingHandler(
     return True
 
 
-__all__ = ["ItemPropertyShowingHandler"]
+__all__ = ["HandleItemPropertyShowing"]

@@ -4,6 +4,7 @@ from Controllers.InterfaceController.Data import (
 )
 
 import multiprocessing as multiprocessing
+from threading import Thread, Event
 
 
 class InterfaceController:
@@ -31,6 +32,9 @@ class InterfaceController:
 
     screenOffset: tuple[int, int] = (0, 0)
 
+    scrollingEvents: dict[str, Event] = {}
+    scrollingThreads: dict[str, Thread] = {}
+
     processes: list[multiprocessing.Process] = []
 
 
@@ -51,6 +55,8 @@ Data: InterfaceController = InterfaceController()
 - **expansionToggled** `bool`: Whether the expansion icon is toggled or not.
 - **collapseToggled** `bool`: Whether the collapse icon is toggled or not.
 - **screenOffset** `tuple[int, int]`: The offset of the screen.
+- **scrollingEvents** `Event`: The events for page scrolling.
+- **scrollingThreads** `Event`: The threads for page scrolling.
 - **processes** `list[multiprocessing.Process]`: A list of all the processes in the interface.
 """
 

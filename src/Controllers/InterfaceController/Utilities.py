@@ -71,9 +71,15 @@ def DrawItem(item: _INTERFACE_TYPES.ItemDrawInfo) -> None:
         adjustedY + InterfaceData.fontSize >= 0
         and adjustedY <= InterfaceData.screenResolution[1]
     ):
-        DrawText(item.name, (item.nameHitbox.x, adjustedY - 4))
+        DrawText(
+            item.name,
+            (item.nameHitbox.x - InterfaceData.screenOffset[1], adjustedY - 4),
+        )
         if item.icon is not None:
-            DrawImage(item.icon, (item.iconHitbox.x, adjustedY))
+            DrawImage(
+                item.icon,
+                (item.iconHitbox.x - InterfaceData.screenOffset[1], adjustedY),
+            )
 
     # Return if the line is not expanded
     if item.icon is None or item.icon == InterfaceData.images["plus"]:

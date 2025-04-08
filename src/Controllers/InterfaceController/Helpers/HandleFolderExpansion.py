@@ -12,7 +12,7 @@ from Controllers.InterfaceController.Data.InterfaceController_Data import (
 )
 
 
-def FolderExpansionHandler(
+def HandleFolderExpansion(
     event: _INTERFACE_TYPES.Event,
     item: _INTERFACE_TYPES.ItemDrawInfo,
     index: int,
@@ -35,7 +35,7 @@ def FolderExpansionHandler(
 
         # Increment the index for the sub-items
         for subItem in item.subItems:
-            index = FolderExpansionHandler(event, subItem, index)
+            index = HandleFolderExpansion(event, subItem, index)
 
         return index
 
@@ -56,7 +56,7 @@ def FolderExpansionHandler(
 
         # Also check if icons of any sub folders are clicked
         for subItem in item.subItems:
-            index = FolderExpansionHandler(event, subItem, index)
+            index = HandleFolderExpansion(event, subItem, index)
 
         return index
 
@@ -80,7 +80,7 @@ def FolderExpansionHandler(
     if len(item.subItems) > 0:
         # Update the index of the folder's sub items
         for subItem in item.subItems:
-            index = FolderExpansionHandler(event, subItem, index)
+            index = HandleFolderExpansion(event, subItem, index)
 
         return index
 
@@ -134,4 +134,4 @@ def FolderExpansionHandler(
     return index
 
 
-__all__ = ["FolderExpansionHandler"]
+__all__ = ["HandleFolderExpansion"]

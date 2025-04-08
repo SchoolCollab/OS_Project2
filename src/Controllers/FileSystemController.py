@@ -4,60 +4,34 @@ import os as os
 import psutil as psutil
 import logging as logging
 
+import Controllers.PartitionController as PartitionController
 
-class PartitionController:
-    partitions: list[_TYPES.DiskPartition] = []
+
+class FileSystemController:
     files: dict[str, _TYPES.File] = {}
     folders: dict[str, _TYPES.Folder] = {}
 
 
-Data: PartitionController = PartitionController()
-"""Data for the PartitionController
+Data: FileSystemController = FileSystemController()
+"""Data for the FileSystemController
 
 ### Attributes
-- **partitions** `list[_TYPES.DiskPartition]`: A list of all the partitions in the disk.
 - **files** `dict[str, _TYPES.File]`: A dictionary of all the files in the disk.
 - **folders** `dict[str, _TYPES.Folder]`: A dictionary of all the folders in the disk.
 """
 
 
-def GetPartitions() -> list[_TYPES.DiskPartition]:
-    """Get the partitions of the disk
-
-    ### Returns
-    - The partitions of the disk
-    """
-    # Check if the partitions are already acquired
-    if len(Data.partitions) != 0:
-        return Data.partitions
-
-    try:
-        # Get the partitions
-        for partition in psutil.disk_partitions():
-            Data.partitions.append(_TYPES.DiskPartition(partition))
-
-            # Also add the partition's mountpoint as a folder
-            Data.folders[partition.mountpoint] = _TYPES.Folder(partition.mountpoint)
-            Data.partitions[-1].home = Data.folders[partition.mountpoint]
-            Data.partitions[-1].home.name = Data.partitions[-1].mountPoint
-
-    except Exception as e:
-        raise e
-
-    return Data.partitions
-
-
 def GetItem(itempath: str) -> _TYPES.File | _TYPES.Folder | None:
-    """Get a file or folder from the path
+    """Get a file or folder from the path.
 
     ### Parameters
-    - itempath: The path of the file or folder
+    - **itempath** `str`: The path of the file or folder.
 
     ### Returns
-    - The file or folder object if it exists, None otherwise
+    - `_TYPES.File | _TYPES.Folder | None`: The file or folder object if it exists, `None` otherwise.
     """
     # Check if the item exists in the files dictionary
-    if os.path.isfile(itempath):
+    if PartitionController.IsFile(itempath):
         if itempath not in Data.files:
             Data.files[itempath] = _TYPES.File(itempath)
 
@@ -76,14 +50,14 @@ def GetItem(itempath: str) -> _TYPES.File | _TYPES.Folder | None:
 def GetDescendants(
     folder: _TYPES.Folder = None, path: str = None
 ) -> _TYPES.Descendants:
-    """Get the descendants of a folder
+    """Get the descendants of a folder.
 
     ### Parameters
-    - folder: The folder object
-    - path: The path of the folder
+    - **folder** `_TYPES.Folder`: The folder object.
+    - **path** `str`: The path of the folder.
 
     ### Returns
-    - The descendants of the folder (files and sub-folders)
+    - `_TYPES.Descendants`: The descendants of the folder (files and sub-folders).
     """
     assert (
         folder is not None or path is not None
@@ -206,17 +180,15 @@ def GetDescendants(
     return folder.descendants
 
 
-def CalculateFolderSize(
-    folder: _TYPES.Folder = None, path: str = None
-) -> _TYPES.Folder:
-    """Calculate the size of a folder (including all its contents)
+def CalculateFolderSize(folder: _TYPES.Folder = None, path: str = None) -> int:
+    """Calculate the size of a folder (including all its contents).
 
     ### Parameters
-    - folder: The folder object
-    - path: The path of the folder
+    - **folder** `_TYPES.Folder`: The folder object.
+    - **path** `str`: The path of the folder.
 
     ### Returns
-    - The total size of the folder
+    - `int`: The total size of the folder object.
     """
     assert (
         folder is not None or path is not None
@@ -263,7 +235,6 @@ def CalculateFolderSize(
 
 __all__ = [
     "Data",
-    "GetPartitions",
     "GetDescendants",
     "CalculateFolderSize",
 ]

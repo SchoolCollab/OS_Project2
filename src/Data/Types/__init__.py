@@ -1,6 +1,4 @@
-from Data.Types.type_Partition import (
-    DiskFormat,
-    DiskPartition,
+from Data.Types.type_FileSystem import (
     File,
     Folder,
     Descendants,
@@ -8,8 +6,6 @@ from Data.Types.type_Partition import (
 from Data.Types.type_Time import Time, Date, DateTime
 
 __all__ = [
-    "DiskFormat",
-    "DiskPartition",
     "File",
     "Folder",
     "Descendants",

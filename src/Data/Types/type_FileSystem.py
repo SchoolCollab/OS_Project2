@@ -1,41 +1,10 @@
 from __future__ import annotations
-
 import Data.Types.type_Time as Time
-
-from enum import Enum
-from psutil._common import sdiskpart
 
 import os as os
 import datetime as datetime
-import psutil as psutil
 
-
-class DiskFormat(Enum):
-    """An enumeration to represent the format of a disk.
-
-    ### Values
-    - **FAT32**: FAT32 format
-    - **exFAT**: exFAT format
-    - **NTFS**: NTFS format
-    - **APFS**: APFS format
-    - **HFSP**: HFSP format
-    - **ext2**: ext2 format
-    - **ext3**: ext3 format
-    - **ext4**: ext4 format
-    """
-
-    # Cross-platform
-    FAT32 = "fat32"
-    exFAT = "exfat"
-    # Windows
-    NTFS = "ntfs"
-    # MacOS
-    APFS = "apfs"
-    HFSP = "hfsp"
-    # Linux
-    ext2 = "ext2"
-    ext3 = "ext3"
-    ext4 = "ext4"
+import Controllers.PartitionController as PartitionController
 
 
 class File:
@@ -86,44 +55,6 @@ class File:
             datetime.datetime.fromtimestamp(creationTime)
         )
         self.parent: Folder = parentFolder
-
-
-class Descendants:
-    """A class to represent the descendants of a folder.
-
-    ### Attributes
-    - **files** `list[File]`: The files in the folder.
-    - **folders** `list[Folder]`: The sub-folders in the folder.
-    """
-
-    def __init__(self):
-        """Constructs all the necessary attributes for the descendants object."""
-        self.files: list[File] = []
-        self.folders: list[Folder] = []
-
-    def __len__(self) -> int:
-        """Get the number of descendants.
-
-        ### Returns
-        - **int**: The number of descendants.
-        """
-        return len(self.files) + len(self.folders)
-
-    def isEmpty(self) -> bool:
-        """Check if the descendants are empty.
-
-        ### Returns
-        - **bool**: `True` if the descendants are empty, `False` otherwise.
-        """
-        return len(self.files) == 0 and len(self.folders) == 0
-
-    def __iter__(self) -> iter[tuple[list[File], list[Folder]]]:
-        """Get the iterator of the descendants.
-
-        ### Returns
-        - **iter**: The iterator of the descendants.
-        """
-        return iter((self.files, self.folders))
 
 
 class Folder:
@@ -178,32 +109,42 @@ class Folder:
         self.descendants: Descendants = Descendants()
 
 
-class DiskPartition:
-    """A class to represent a partition.
+class Descendants:
+    """A class to represent the descendants of a folder.
 
     ### Attributes
-    - **device** `str`: The device name of the partition.
-    - **formatStype** `DiskFormat`: The format of the partition.
-    - **mountPoint** `str`: The mount point of the partition.
-    - **mountOptions** `str`: The mount options of the partition.
-    - **home** `Folder`: The home folder of the partition.
+    - **files** `list[File]`: The files in the folder.
+    - **folders** `list[Folder]`: The sub-folders in the folder.
     """
 
-    def __init__(self, partition: sdiskpart):
-        """Constructs all the necessary attributes for the partition object.
+    def __init__(self):
+        """Constructs all the necessary attributes for the descendants object."""
+        self.files: list[File] = []
+        self.folders: list[Folder] = []
 
-        ### Parameters
-        - **partition** `sdiskpart`: The partition object from psutil.
+    def __len__(self) -> int:
+        """Get the number of descendants.
+
+        ### Returns
+        - **int**: The number of descendants.
         """
-        assert isinstance(partition, sdiskpart), TypeError(
-            "Partition must be a psutil._common.sdiskpart object."
-        )
+        return len(self.files) + len(self.folders)
 
-        self.device: str = partition.device
-        self.formatStype: DiskFormat = DiskFormat(partition.fstype.lower())
-        self.mountPoint: str = partition.mountpoint
-        self.mountOptions: str = partition.opts
-        self.home: Folder = None
+    def __iter__(self) -> iter[tuple[list[File], list[Folder]]]:
+        """Get the iterator of the descendants.
+
+        ### Returns
+        - **iter**: The iterator of the descendants.
+        """
+        return iter((self.files, self.folders))
+
+    def isEmpty(self) -> bool:
+        """Check if the descendants are empty.
+
+        ### Returns
+        - **bool**: `True` if the descendants are empty, `False` otherwise.
+        """
+        return len(self.files) == 0 and len(self.folders) == 0
 
 
-__all__ = ["DiskFormat", "DiskPartition", "File", "Folder", "Descendants"]
+__all__ = ["File", "Folder", "Descendants"]

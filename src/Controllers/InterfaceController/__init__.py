@@ -5,6 +5,7 @@ from Controllers.InterfaceController.Data import (
 
 import os as os
 import pygame as pygame
+from threading import Thread, Event
 
 import Controllers.PartitionController as PartitionController
 import Controllers.FileSystemController as FileSystemController
@@ -119,6 +120,12 @@ def Init() -> None:
     # Update the display
     InterfaceData.display.flip()
 
+    # Initialize the scrolling events
+    InterfaceData.scrollingEvents["up"] = Event()
+    InterfaceData.scrollingEvents["down"] = Event()
+    InterfaceData.scrollingEvents["left"] = Event()
+    InterfaceData.scrollingEvents["right"] = Event()
+
     # Set the status to True
     InterfaceData.status = True
 
@@ -132,7 +139,13 @@ def Init() -> None:
     InterfaceData.display.quit()
     pygame.quit()
 
-    # Wait for all processes to finish453eewwd4r
+    # Stop the scrolling thread if it is running
+    for direction, scrollingThread in InterfaceData.scrollingThreads.items():
+        if scrollingThread is not None:
+            InterfaceData.scrollingEvents[direction].clear()
+            scrollingThread.join()
+
+    # Wait for all processes to finish
     for process in InterfaceData.processes:
         process.join()
 
@@ -179,7 +192,7 @@ def EventHandler(event: pygame.event.Event) -> None:
 
         # Handle the expansion/collapse event for each item
         for item in InterfaceData.items:
-            index = Helpers.FolderExpansionHandler(event, item, index)
+            index = Helpers.HandleFolderExpansion(event, item, index)
 
         # Redraw the entire screent if folder expansion/collapse is toggled
         if InterfaceData.expansionToggled or InterfaceData.collapseToggled:
@@ -197,47 +210,119 @@ def EventHandler(event: pygame.event.Event) -> None:
 
         # Handle the property window showing event
         for item in InterfaceData.items:
-            if Helpers.ItemPropertyShowingHandler(event, item):
+            if Helpers.HandleItemPropertyShowing(event, item):
                 return
 
     # Handle mouse wheel scrolling
     elif event.type == pygame.MOUSEWHEEL:
-        # Limit the scroll range by getting the last item
-        lastItem = InterfaceData.items[-1]
-
-        while len(lastItem.subItems) > 0:
-            # Get the last sub item
-            lastItem = lastItem.subItems[-1]
-
-        # Get the maximum scroll value
-        maxScroll = lastItem.index * InterfaceData.fontSize * 2 + 100
-
-        # Update the screen offset
-        InterfaceData.screenOffset = (
-            max(
-                0,
-                min(
-                    InterfaceData.screenOffset[0]
-                    - event.y * InterfaceData.fontSize * 2,
-                    maxScroll
-                    - InterfaceData.screenResolution[1]
-                    + InterfaceData.fontSize * 2,
-                ),
-            ),
-            0,
-        )
-
-        # Redraw the screen with the updated scroll offset
-        InterfaceData.surface.fill((200, 200, 200))  # Dark gray background
-        for item in InterfaceData.items:
-            DrawItem(item)
-
-        InterfaceData.display.update()
+        # Scroll in Y-axis and redraw the screen with the updated scroll offset
+        Helpers.HandleScrolling(0, event.y)
+        Helpers.RedrawScreen()
 
     elif event.type == pygame.KEYDOWN:
         # Check if the key pressed is Escape
         if event.key == pygame.K_ESCAPE:
             InterfaceData.status = False
+
+        elif event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+            # Get the direction and scroll value based on the key pressed
+            direction = "up" if event.key == pygame.K_UP else "down"
+            scrollValue = 1 if direction == "up" else -1
+
+            # Define a function to handle scrolling vertically
+            def HandleScrollingVertically(direction: str, scrollValue: int) -> None:
+                """Handle scrolling vertically
+
+                ### Parameters
+                - **direction** `str`: The direction to scroll in.
+                - **scrollValue** `int`: The value to scroll by.
+                """
+                initialWait = 100
+
+                while InterfaceData.scrollingEvents[direction].is_set():
+                    # Scroll in Y-axis and redraw the screen with the updated scroll offset
+                    Helpers.HandleScrolling(0, scrollValue)
+                    Helpers.RedrawScreen()
+
+                    # Reduce the wait time for smoother scrolling
+                    initialWait = max(5, initialWait - 10)
+                    pygame.event.wait(initialWait)
+
+            # Set the event for scrolling at that direction
+            InterfaceData.scrollingEvents[direction].set()
+
+            # Start the scrolling thread
+            scrollingThread = Thread(
+                target=HandleScrollingVertically, args=(direction, scrollValue)
+            )
+            scrollingThread.start()
+            InterfaceData.scrollingThreads[direction] = scrollingThread
+
+        elif event.key == pygame.K_RIGHT or event.key == pygame.K_LEFT:
+            # Get the direction and scroll value based on the key pressed
+            direction = "right" if event.key == pygame.K_RIGHT else "left"
+            scrollValue = 1 if direction == "left" else -1
+
+            # Define a function to handle scrolling horizontally
+            def HandleScrollingHorizontally(direction: str, scrollValue: int) -> None:
+                """Handle scrolling horizontally
+
+                ### Parameters
+                - **direction** `str`: The direction to scroll in.
+                - **scrollValue** `int`: The value to scroll by.
+                """
+                initialWait = 100
+
+                while InterfaceData.scrollingEvents[direction].is_set():
+                    # Scroll in X-axis and redraw the screen with the updated scroll offset
+                    Helpers.HandleScrolling(scrollValue, 0)
+                    Helpers.RedrawScreen()
+
+                    # Reduce the wait time for smoother scrolling
+                    initialWait = max(5, initialWait - 10)
+                    pygame.event.wait(initialWait)
+
+            # Set the event for scrolling at that direction
+            InterfaceData.scrollingEvents[direction].set()
+
+            # Start the scrolling thread
+            scrollingThread = Thread(
+                target=HandleScrollingHorizontally, args=(direction, scrollValue)
+            )
+            scrollingThread.start()
+            InterfaceData.scrollingThreads[direction] = scrollingThread
+
+        elif event.key == pygame.K_HOME:
+            # Scroll to the start of the screen
+            Helpers.HandleScrolling(float("inf"), float("inf"))
+            Helpers.RedrawScreen()
+
+        elif event.key == pygame.K_END:
+            # Scroll to the end of the screen
+            Helpers.HandleScrolling(float("inf"), -float("inf"))
+            Helpers.RedrawScreen()
+
+    elif event.type == pygame.KEYUP:
+        # Check if the key released is UP, DOWN, LEFT or RIGHT
+        if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
+            # Get the direction based on the key released
+            direction = (
+                "up"
+                if event.key == pygame.K_UP
+                else (
+                    "down"
+                    if event.key == pygame.K_DOWN
+                    else "left" if event.key == pygame.K_LEFT else "right"
+                )
+            )
+
+            # Clear the event for that direction
+            InterfaceData.scrollingEvents[direction].clear()
+
+            # Stop the scrolling thread at that direction
+            scollingThread = InterfaceData.scrollingThreads[direction]
+            if scollingThread is not None:
+                scollingThread.join()
 
     # Remove terminated processes from the processes list
     InterfaceData.processes = [

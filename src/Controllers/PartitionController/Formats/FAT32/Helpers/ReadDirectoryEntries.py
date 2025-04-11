@@ -69,6 +69,10 @@ def ReadDirectoryEntries(
                 # Read the next entry
                 continue
 
+            # Skip corrupted or invalid entries
+            if len(entry) < 32:
+                break
+
             # Use LFN if available, otherwise use the short name
             if lfnParts:
                 name = CleanLFNName(lfnParts)
@@ -101,6 +105,7 @@ def ReadDirectoryEntries(
                     "creationDateTime": creationDateTime,
                 }
             )
+
     return entries
 
 
@@ -157,7 +162,7 @@ def DecodeTimeDate(entry: bytes) -> datetime:
     month = (dateRaw >> 5) & 0x0F  # (dateRaw % 512) // 32
     day = dateRaw & 0x1F  # dateRaw % 32
 
-    return datetime(year, month, day, hours, minutes, seconds, 0)
+    return datetime(year, month, day, hours, minutes, seconds)
 
 
 __all__ = [

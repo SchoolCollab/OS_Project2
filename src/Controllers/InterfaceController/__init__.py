@@ -8,7 +8,6 @@ import pygame as pygame
 from threading import Thread, Event
 
 import Controllers.PartitionController as PartitionController
-import Controllers.FileSystemController as FileSystemController
 
 import Controllers.InterfaceController.Utilities as Utilities
 import Controllers.InterfaceController.Helpers as Helpers
@@ -111,7 +110,8 @@ def Init() -> None:
                 InterfaceData.images["plus"],
                 i,
                 0,
-                partition.mountPoint,
+                partition.rawPath,
+                partition.home.id,
             )
         )
 
@@ -133,7 +133,7 @@ def Init() -> None:
     while InterfaceData.status:
         for event in pygame.event.get():
             # Handle events
-            EventHandler(event)
+            HandleEvent(event)
 
     # Clean pygame
     InterfaceData.display.quit()
@@ -150,7 +150,7 @@ def Init() -> None:
         process.join()
 
 
-def EventHandler(event: pygame.event.Event) -> None:
+def HandleEvent(event: pygame.event.Event) -> None:
     """Handle events for the interface
 
     ### Returns
@@ -162,19 +162,12 @@ def EventHandler(event: pygame.event.Event) -> None:
 
     # Handle window resize
     elif event.type == pygame.VIDEORESIZE:
-        # Update the surface resolution
+        # Update the surface resolution and scrolling offset
         InterfaceData.screenResolution = (event.w, event.h)
+        Helpers.HandleScrolling(0, 0)
 
-        # Scale the background to the new resolution
-        # InterfaceData.images["background"] = pygame.transform.scale(
-        #     InterfaceData.images["background"], InterfaceData.screenResolution
-        # )
-        # InterfaceData.surface.blit(InterfaceData.images["background"], (0, 0))
-        InterfaceData.surface.fill((200, 200, 200))  # Dark gray background
-
-        # Redraw all items
-        for item in InterfaceData.items:
-            DrawItem(item)
+        # Redraw the screen
+        Helpers.RedrawScreen()
 
         # Update the display
         InterfaceData.display.update()
@@ -196,16 +189,8 @@ def EventHandler(event: pygame.event.Event) -> None:
 
         # Redraw the entire screent if folder expansion/collapse is toggled
         if InterfaceData.expansionToggled or InterfaceData.collapseToggled:
-            # Fill the surface with the background
-            # InterfaceData.surface.blit(Data.images["background"], (0, 0))
-            InterfaceData.surface.fill((200, 200, 200))  # Dark gray background
-
-            # Redraw all items
-            for item in InterfaceData.items:
-                DrawItem(item)
-
-            # Update the display
-            InterfaceData.display.flip()
+            # Redraw the screen
+            Helpers.RedrawScreen()
             return
 
         # Handle the property window showing event
@@ -375,4 +360,4 @@ def EraseItem(item: _INTERFACE_TYPES.ItemDrawInfo) -> None:
     Utilities.EraseItem(item)
 
 
-__all__ = {"InterfaceData", "Init"}
+__all__ = {"InterfaceData", "Init", "DrawText", "DrawImage", "DrawItem", "EraseItem"}

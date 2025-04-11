@@ -12,6 +12,7 @@ import Controllers.PartitionController.Formats.FAT32.Helpers as Fat32Helpers
 class FAT32:
     """Data for a FAT32 disk."""
 
+    itemCount = 0
     files: dict[int, _TYPES.File] = {}
     folders: dict[int, _TYPES.Folder] = {}
 
@@ -24,6 +25,7 @@ This dictionary stores information about FAT32-formatted disks, where each key r
 ### Structure
 - **Key** `str`: The identifier for the FAT32 disk (e.g., `"\\.\C:"`, `"\\.\D:"`).
 - **Value** `FAT32`: An object containing the following attributes:
+    - **itemCount** `int`: The total number of items (files and folders) on the disk.
     - **files** `dict[int, _TYPES.File]`: A dictionary mapping file IDs to `File` objects, representing all files on the disk.
     - **folders** `dict[int, _TYPES.Folder]`: A dictionary mapping folder IDs to `Folder` objects, representing all folders on the disk.
 
@@ -76,22 +78,35 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
             volume, rootClusters, dataRegionOffset, clusterSize
         )
 
-        logging.debug(f"Root directory entries: {rootEntries}")
+        # Initialize the root folder
+        Data[partitionPath].folders[0] = _TYPES.Folder(
+            0,
+            partition.mountPoint,
+            None,
+        )
+
+        # Update the item count
+        Data[partitionPath].itemCount += 1
+
+        # Remove the first entry as it is the "." entry
+        rootEntries = [
+            entry for entry in rootEntries if entry["name"] not in (".", "..")
+        ]
 
         # Process the root directory entries
         for entry in rootEntries:
-            ProcessEntry(
+            item = ProcessEntry(
                 volume, fatData, entry, dataRegionOffset, clusterSize, partitionPath
             )
 
-        # Rename the root folder to match the partition's mount point
-        if rootCluster in Data[partitionPath].folders:
-            Data[partitionPath].folders[rootCluster].name = partition.mountPoint
-        else:
-            logging.error(f"Root folder with cluster {rootCluster} not found.")
-            return None
+            if item is not None:
+                # Append item to the root folder descendants
+                if isinstance(item, _TYPES.File):
+                    Data[partitionPath].folders[0].descendants.files.append(item)
+                else:
+                    Data[partitionPath].folders[0].descendants.folders.append(item)
 
-        return Data[partitionPath].folders[rootCluster]  # Return the root folder
+        return Data[partitionPath].folders[0]  # Return the root folder
 
     return None
 
@@ -118,60 +133,73 @@ def ProcessEntry(
     - `File | Folder | None`: The processed file or folder, or `None` if not applicable.
     """
     if entry["isDir"]:
-        if entry["cluster"] == 2:
-            print("Root directory entry found.")
+        # Get the current id and update the item count
+        itemId = Data[partitionPath].itemCount
+        Data[partitionPath].itemCount += 1
 
         # Add the folder to the partition's folder dictionary
-        Data[partitionPath].folders[entry["cluster"]] = _TYPES.Folder(
-            entry["cluster"],
+        Data[partitionPath].folders[itemId] = _TYPES.Folder(
+            itemId,
             entry["name"],
             entry["creationDateTime"],
         )
 
-        # Get the subdirectory entries
-        clusters = Fat32Helpers.ReadClusterChain(fatData, entry["cluster"])
-        subEntries = Fat32Helpers.ReadDirectoryEntries(
-            volume, clusters, dataRegionOffset, clusterSize
-        )
+        if entry["cluster"] >= 2:
+            # Get the subdirectory entries
+            clusters = Fat32Helpers.ReadClusterChain(fatData, entry["cluster"])
+            subEntries = Fat32Helpers.ReadDirectoryEntries(
+                volume, clusters, dataRegionOffset, clusterSize
+            )
 
-        # Recursively process subdirectories
-        for subEntry in subEntries:
-            if subEntry["name"] not in (".", ".."):
-                # Process the subdirectory entry
-                item = ProcessEntry(
-                    volume,
-                    fatData,
-                    subEntry,
-                    dataRegionOffset,
-                    clusterSize,
-                    partitionPath,
-                )
+            # Recursively process subdirectories
+            for subEntry in subEntries:
+                if subEntry["name"] not in (".", ".."):
+                    # Process the subdirectory entry
+                    item = ProcessEntry(
+                        volume,
+                        fatData,
+                        subEntry,
+                        dataRegionOffset,
+                        clusterSize,
+                        partitionPath,
+                    )
 
-                if item != None:
-                    continue
+                    if item == None:
+                        continue
 
-                # Append item to the current folder descendants
-                if isinstance(item, _TYPES.File):
-                    Data[partitionPath].folders[
-                        entry["cluster"]
-                    ].descendants.files.append(item)
-                else:
-                    Data[partitionPath].folders[
-                        entry["cluster"]
-                    ].descendants.folders.append(item)
+                    # Append item to the current folder descendants
+                    if isinstance(item, _TYPES.File):
+                        Data[partitionPath].folders[itemId].descendants.files.append(
+                            item
+                        )
+                    else:
+                        Data[partitionPath].folders[itemId].descendants.folders.append(
+                            item
+                        )
 
-        return Data[partitionPath].folders[entry["cluster"]]
+        return Data[partitionPath].folders[itemId]
 
     elif entry["isFile"]:
+        # Get the current id and update the item count
+        itemId = Data[partitionPath].itemCount
+        Data[partitionPath].itemCount += 1
+
         # Add the file to the partition's file dictionary
-        Data[partitionPath].files[entry["cluster"]] = _TYPES.File(
-            entry["cluster"],
+        Data[partitionPath].files[itemId] = _TYPES.File(
+            itemId,
             entry["name"],
             entry["size"],
             entry["creationDateTime"],
+            (
+                Fat32Helpers.ExtractTxtContent(
+                    volume, fatData, entry, dataRegionOffset, clusterSize
+                )
+                if entry["name"].lower().endswith(".txt")
+                else None
+            ),
         )
 
-        return Data[partitionPath].files[entry["cluster"]]
+        return Data[partitionPath].files[itemId]
 
     logging.warning(
         f"Unknown entry type for {entry['name']} in partition {partitionPath}."

@@ -21,9 +21,9 @@ def ParseBootSector(volume: io.BufferedReader) -> dict[str, int]:
 
     return {
         "bytesPerSector": int.from_bytes(boot[11:13], "little"),
-        "sectorsPerCluster": int.from_bytes(boot[13], "little"),
+        "sectorsPerCluster": boot[13],
         "reservedSectors": int.from_bytes(boot[14:16], "little"),
-        "numFats": int.from_bytes(boot[16], "little"),
+        "numFats": boot[16],
         "sectorsPerFat": int.from_bytes(boot[36:40], "little"),
         "rootCluster": int.from_bytes(boot[44:48], "little"),
     }

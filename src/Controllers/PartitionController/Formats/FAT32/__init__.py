@@ -36,14 +36,14 @@ allFolders = fat32Disk.folders
 """
 
 
-def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
+def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
     """Initialize the FAT32 partition and parse its file system to extract file and folder information.
 
     ### Parameters
     - **partition** `DiskPartition`: The partition to initialize.
 
     ### Returns
-    - `Folder`: The root folder of the FAT32 partition.
+    - `Folder | None`: The root folder of the FAT32 partition or `None` if the partition is not FAT32.
     """
     assert partition.format == "FAT32", "Partition format must be FAT32."
 
@@ -87,10 +87,12 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
                 volume, fatData, entry, dataRegionOffset, clusterSize, partitionPath
             )
 
-    # Rename the root folder to match the partition's mount point
-    Data[partitionPath].folders[rootCluster].name = partition.mountPoint
+        # Rename the root folder to match the partition's mount point
+        Data[partitionPath].folders[rootCluster].name = partition.mountPoint
 
-    return Data[partitionPath].folders[rootCluster]  # Return the root folder
+        return Data[partitionPath].folders[rootCluster]  # Return the root folder
+
+    return None
 
 
 def ProcessEntry(

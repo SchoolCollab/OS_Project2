@@ -118,6 +118,9 @@ def ProcessEntry(
     - `File | Folder | None`: The processed file or folder, or `None` if not applicable.
     """
     if entry["isDir"]:
+        if entry["cluster"] == 2:
+            print("Root directory entry found.")
+
         # Add the folder to the partition's folder dictionary
         Data[partitionPath].folders[entry["cluster"]] = _TYPES.Folder(
             entry["cluster"],

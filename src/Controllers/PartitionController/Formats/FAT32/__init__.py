@@ -37,14 +37,7 @@ allFolders = fat32Disk.folders
 
 
 def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
-    """Initialize the FAT32 partition and parse its file system to extract file and folder information.
-
-    ### Parameters
-    - **partition** `DiskPartition`: The partition to initialize.
-
-    ### Returns
-    - `Folder | None`: The root folder of the FAT32 partition or `None` if the partition is not FAT32.
-    """
+    """Initialize the FAT32 partition and parse its file system to extract file and folder information."""
     assert partition.format == "FAT32", "Partition format must be FAT32."
 
     # Get the partition path
@@ -58,13 +51,15 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
         # Parse the boot sector
         bootSector = Fat32Helpers.ParseBootSector(volume)
 
-        # Extract datas from the boot sector
+        # Extract data from the boot sector
         bytesPerSector = bootSector["bytesPerSector"]
         sectorsPerCluster = bootSector["sectorsPerCluster"]
         reservedSectors = bootSector["reservedSectors"]
         numFats = bootSector["numFats"]
         sectorsPerFat = bootSector["sectorsPerFat"]
         rootCluster = bootSector["rootCluster"]
+
+        logging.debug(f"Root cluster: {rootCluster}")
 
         # Calculate offsets and sizes
         fatOffset = reservedSectors * bytesPerSector
@@ -81,6 +76,8 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
             volume, rootClusters, dataRegionOffset, clusterSize
         )
 
+        logging.debug(f"Root directory entries: {rootEntries}")
+
         # Process the root directory entries
         for entry in rootEntries:
             ProcessEntry(
@@ -88,7 +85,11 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder | None:
             )
 
         # Rename the root folder to match the partition's mount point
-        Data[partitionPath].folders[rootCluster].name = partition.mountPoint
+        if rootCluster in Data[partitionPath].folders:
+            Data[partitionPath].folders[rootCluster].name = partition.mountPoint
+        else:
+            logging.error(f"Root folder with cluster {rootCluster} not found.")
+            return None
 
         return Data[partitionPath].folders[rootCluster]  # Return the root folder
 

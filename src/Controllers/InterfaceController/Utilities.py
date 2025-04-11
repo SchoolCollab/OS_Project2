@@ -6,7 +6,6 @@ from Controllers.InterfaceController.Data import (
 import os as os
 import pygame as pygame
 
-import Controllers.FileSystemController as FileSystemController
 import Controllers.InterfaceController.Helpers as Helpers
 
 from Controllers.InterfaceController.Data.InterfaceController_Data import (

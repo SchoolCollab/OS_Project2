@@ -111,9 +111,7 @@ def InitPropertyWindow(
 
         # If the file is a .txt file, extract its content
         if item.extension == "txt":
-            print(f"Extracting content from {item.name}...")
-            print(f"Item content: {item.content}")
-            content = item.content
+            content = item.content or ""
 
     else:
         properties.append("Invalid path")
@@ -127,9 +125,21 @@ def InitPropertyWindow(
         renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))
         renderedProperties.append(renderedText)
 
-    if content:
-        for line in content.split("\n"):
-            renderedContent.append(font.render(SanitizeText(line), True, (0, 0, 0)))
+    for line in content.split("\n"):
+        # Split the line if it exceeds the width of the window
+        while font.size(SanitizeText(line))[0] > resolution[0] - 30:
+            # Find the index to split the line
+            splitIndex = 0
+            while font.size(SanitizeText(line[:splitIndex]))[0] < resolution[0] - 30:
+                splitIndex += 1
+
+            renderedText = font.render(SanitizeText(line[:splitIndex]), True, (0, 0, 0))
+            renderedContent.append(renderedText)
+
+            line = line[splitIndex:]
+
+        renderedText = font.render(SanitizeText(line), True, (0, 0, 0))
+        renderedContent.append(renderedText)
 
     # Display the properties or content
     def display():
@@ -139,10 +149,12 @@ def InitPropertyWindow(
             for i, prop in enumerate(renderedProperties):
                 surface.blit(prop, (20, i * fontSize * 2 + fontSize))
 
-        elif content:
-            lines = content.split("\n")
+            # Add a toggle message
+            toggleMessage = font.render("Press TAB to view content", True, (0, 0, 0))
 
-            for i, line in enumerate(lines):
+            surface.blit(toggleMessage, (20, resolution[1] - fontSize * 2))
+        else:
+            for i, line in enumerate(renderedContent):
                 surface.blit(line, (20, i * fontSize * 2 + fontSize))
 
         # Update the display
@@ -167,7 +179,7 @@ def InitPropertyWindow(
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                elif event.key == pygame.K_TAB and content:
+                elif event.key == pygame.K_TAB and content != None:
                     # Toggle between properties and content
                     isShowingProperties = not isShowingProperties
                     display()

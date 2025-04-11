@@ -52,9 +52,8 @@ def ReadDirectoryEntries(
             if len(entry) < 32:
                 break
 
-            if entry[0] == 0x00:  # No more entries
-                break
-            if entry[0] == 0xE5:  # Deleted entry
+            # Skip deleted entries
+            if entry[0] == 0x00 or entry[0] == 0xE5:
                 continue
 
             # Handle Long File Name (LFN) entries
@@ -137,7 +136,7 @@ def ParseFileName(entry: bytes):
     name = entry[0:8].decode("ascii", errors="ignore").strip()
     extention = entry[8:11].decode("ascii", errors="ignore").strip()
 
-    return (f"{name}.{extention}" if extention else name).strip()
+    return f"{name}.{extention}" if extention else name
 
 
 def DecodeTimeDate(entry: bytes) -> datetime:

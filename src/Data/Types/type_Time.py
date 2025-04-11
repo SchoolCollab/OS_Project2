@@ -36,7 +36,6 @@ class Time:
     - **hour** `int`: The hour of the time.
     - **minute** `int`: The minute of the time.
     - **second** `int`: The second of the time.
-    - **microsecond** `int`: The microsecond of the time.
     """
 
     def __init__(self, time: time):
@@ -48,15 +47,14 @@ class Time:
         self.hour: int = time.hour
         self.minute: int = time.minute
         self.second: int = time.second
-        self.microsecond: int = time.microsecond
 
     def __str__(self):
         """Returns the string representation of the time object.
 
         ### Returns
-        - `str`: The string representation in the format `hour:minute:second:microsecond`.
+        - `str`: The string representation in the format `hour:minute:second`.
         """
-        return f"{self.hour}:{self.minute}:{self.second}:{self.microsecond}"
+        return f"{self.hour}:{self.minute}:{self.second}"
 
 
 class DateTime:
@@ -80,7 +78,7 @@ class DateTime:
         """Returns the string representation of the datetime object.
 
         ### Returns
-        - `str`: The string representation in the format `day/month/year - hour:minute:second:microsecond`.
+        - `str`: The string representation in the format `day/month/year - hour:minute:second`.
         """
         return f"{str(self.date)} - {str(self.time)}"
 

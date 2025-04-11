@@ -66,14 +66,13 @@ def InitPropertyWindow(
     fontSize: int,
     item: _TYPES.File | _TYPES.Folder,
 ) -> None:
-    """Initialize the property window to display an item's properties.
+    """Initialize the property window to display an item's properties or content.
 
     ### Parameters
     - **resolution** `tuple[int, int]`: The resolution of the window.
-    - **fontpath** `str`: The path to the font file.
+    - **fontPath** `str`: The path to the font file.
     - **fontSize** `int`: The size of the font.
-    - **partitionPath** `str`: The path to the partition this item belongs to(e.g., `\\.\C:`).
-    - **itemId** `int`: The ID of the item (file or folder).
+    - **item** `File | Folder`: The item to display properties or content for.
     """
     # Set the display to be centered
     os.environ["SDL_VIDEO_CENTERED"] = "1"
@@ -87,13 +86,15 @@ def InitPropertyWindow(
 
     # Init the display window and fill the background
     surface: _INTERFACE_TYPES.Surface = display.set_mode(resolution)
-    surface.fill((200, 200, 200))  # Dark gray background
+    surface.fill((200, 200, 200))  # Light gray background
 
     # Load the font
     font: _INTERFACE_TYPES.Font = pygame.font.Font(fontPath, fontSize)
 
     # Prepare the properties to display
     properties = []
+    content = None
+    isShowingProperties = True  # Toggle between properties and content
 
     if isinstance(item, _TYPES.Folder):
         # Handle folder properties
@@ -108,18 +109,47 @@ def InitPropertyWindow(
         properties.append(f"Size: {item.size} bytes")
         properties.append(f"Creation Date: {item.creationDateTime}")
 
+        # If the file is a .txt file, extract its content
+        if item.extension == "txt":
+            print(f"Extracting content from {item.name}...")
+            print(f"Item content: {item.content}")
+            content = item.content
+
     else:
         properties.append("Invalid path")
 
-    # Render and display the properties
-    for i, prop in enumerate(properties):
-        renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))  # White text
-        surface.blit(
-            renderedText, (20, i * fontSize * 2 + fontSize)
-        )  # Position the text
+    # Initialize the rendered properties and content
+    renderedProperties: list[_INTERFACE_TYPES.Surface] = []
+    renderedContent: list[_INTERFACE_TYPES.Surface] = []
 
-    # Update the display
-    pygame.display.update()
+    # Render text for the properties or content
+    for prop in properties:
+        renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))
+        renderedProperties.append(renderedText)
+
+    if content:
+        for line in content.split("\n"):
+            renderedContent.append(font.render(SanitizeText(line), True, (0, 0, 0)))
+
+    # Display the properties or content
+    def display():
+        surface.fill((200, 200, 200))  # Clear the surface
+
+        if isShowingProperties:
+            for i, prop in enumerate(renderedProperties):
+                surface.blit(prop, (20, i * fontSize * 2 + fontSize))
+
+        elif content:
+            lines = content.split("\n")
+
+            for i, line in enumerate(lines):
+                surface.blit(line, (20, i * fontSize * 2 + fontSize))
+
+        # Update the display
+        pygame.display.flip()
+
+    # Render the initial display
+    display()
 
     # Wait for the user to close the window
     running = True
@@ -132,16 +162,15 @@ def InitPropertyWindow(
 
             elif event.type == pygame.VIDEOEXPOSE:
                 # Redraw the surface if the window is resized
-                surface.fill((200, 200, 200))
-                for i, prop in enumerate(properties):
-                    renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))
-                    surface.blit(renderedText, (20, i * 30 + 20))
-
-                pygame.display.update()
+                display()
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
+                elif event.key == pygame.K_TAB and content:
+                    # Toggle between properties and content
+                    isShowingProperties = not isShowingProperties
+                    display()
 
     # Quit pygame
     pygame.quit()

@@ -155,10 +155,13 @@ def InitPropertyWindow(
             for i, prop in enumerate(renderedProperties):
                 surface.blit(prop, (20, i * fontSize * 2 + fontSize))
 
-            # Add a toggle message
-            toggleMessage = font.render("Press TAB to view content", True, (0, 0, 0))
+            # Add a toggle message if content is available
+            if content is not None:
+                toggleMessage = font.render(
+                    "Press TAB to view content", True, (0, 0, 0)
+                )
+                surface.blit(toggleMessage, (20, resolution[1] - fontSize * 2))
 
-            surface.blit(toggleMessage, (20, resolution[1] - fontSize * 2))
         else:
             for i, line in enumerate(renderedContent):
                 surface.blit(line, (20, i * fontSize * 2 + fontSize))

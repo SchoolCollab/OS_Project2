@@ -117,9 +117,9 @@ def ProcessEntry(
     if entry["isDir"]:
         # Add the folder to the partition's folder dictionary
         Data[partitionPath].folders[entry["cluster"]] = _TYPES.Folder(
-            id=entry["cluster"],
-            name=entry["name"],
-            creationDateTime=entry["creationDateTime"],
+            entry["cluster"],
+            entry["name"],
+            entry["creationDateTime"],
         )
 
         # Get the subdirectory entries
@@ -159,10 +159,10 @@ def ProcessEntry(
     elif entry["isFile"]:
         # Add the file to the partition's file dictionary
         Data[partitionPath].files[entry["cluster"]] = _TYPES.File(
-            id=entry["cluster"],
-            name=entry["name"],
-            size=entry["size"],
-            creationDateTime=entry["creationDateTime"],
+            entry["cluster"],
+            entry["name"],
+            entry["size"],
+            entry["creationDateTime"],
         )
 
         return Data[partitionPath].files[entry["cluster"]]

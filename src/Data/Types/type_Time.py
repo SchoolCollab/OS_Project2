@@ -16,9 +16,14 @@ class Date:
         ### Parameters
         - **date** `date`: The date object from the **datetime** module.
         """
-        self.year: int = date.year
-        self.month: int = date.month
-        self.day: int = date.day
+        if date is None:
+            self.year: int = 0
+            self.month: int = 0
+            self.day: int = 0
+        else:
+            self.year: int = date.year
+            self.month: int = date.month
+            self.day: int = date.day
 
     def __str__(self):
         """Returns the string representation of the date object.
@@ -44,9 +49,14 @@ class Time:
         ### Parameters
         - **time** `time`: The time object from the **datetime** module.
         """
-        self.hour: int = time.hour
-        self.minute: int = time.minute
-        self.second: int = time.second
+        if time is None:
+            self.hour: int = 0
+            self.minute: int = 0
+            self.second: int = 0
+        else:
+            self.hour: int = time.hour
+            self.minute: int = time.minute
+            self.second: int = time.second
 
     def __str__(self):
         """Returns the string representation of the time object.
@@ -71,8 +81,8 @@ class DateTime:
         ### Parameters
         - **datetime** `datetime`: The datetime object from the **datetime** module.
         """
-        self.date: Date = Date(datetime.date())
-        self.time: Time = Time(datetime.time())
+        self.date: Date = Date(datetime and datetime.date() or None)
+        self.time: Time = Time(datetime and datetime.time() or None)
 
     def __str__(self):
         """Returns the string representation of the datetime object.

@@ -48,6 +48,10 @@ def ReadDirectoryEntries(
         for i in range(0, len(clusterData), 32):  # Each directory entry is 32 bytes
             entry = clusterData[i : i + 32]
 
+            # Skip corrupted or invalid entries
+            if len(entry) < 32:
+                break
+
             if entry[0] == 0x00:  # No more entries
                 break
             if entry[0] == 0xE5:  # Deleted entry
@@ -68,10 +72,6 @@ def ReadDirectoryEntries(
 
                 # Read the next entry
                 continue
-
-            # Skip corrupted or invalid entries
-            if len(entry) < 32:
-                break
 
             # Use LFN if available, otherwise use the short name
             if lfnParts:

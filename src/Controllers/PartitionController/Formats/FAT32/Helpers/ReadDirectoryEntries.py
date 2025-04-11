@@ -52,8 +52,10 @@ def ReadDirectoryEntries(
             if len(entry) < 32:
                 break
 
-            # Skip deleted entries
-            if entry[0] == 0x00 or entry[0] == 0xE5:
+            # Skip invalid or deleted entries
+            if entry[0] == 0x00:  # No more entries
+                break
+            if entry[0] == 0xE5:  # Deleted entry
                 continue
 
             # Handle Long File Name (LFN) entries
@@ -134,12 +136,12 @@ def ParseFileName(entry: bytes):
     - `str`: The parsed file name.
     """
     name = entry[0:8].decode("ascii", errors="ignore").strip()
-    extention = entry[8:11].decode("ascii", errors="ignore").strip()
+    extention = entry[8:11].decode("ascii", errors="ignore").strip().lower()
 
     return f"{name}.{extention}" if extention else name
 
 
-def DecodeTimeDate(entry: bytes) -> datetime:
+def DecodeTimeDate(entry: bytes) -> datetime | None:
     """Decode the creation time and date from a directory entry.
 
     ### Parameters
@@ -161,7 +163,10 @@ def DecodeTimeDate(entry: bytes) -> datetime:
     month = (dateRaw >> 5) & 0x0F  # (dateRaw % 512) // 32
     day = dateRaw & 0x1F  # dateRaw % 32
 
-    return datetime(year, month, day, hours, minutes, seconds)
+    try:
+        return datetime(year, month, day, hours, minutes, seconds)
+    except:
+        return None
 
 
 __all__ = [

@@ -3,7 +3,7 @@ from Controllers.InterfaceController.Data import (
     InterfaceController_Types as _INTERFACE_TYPES,
 )
 
-import Controllers.FileSystemController as FileSystemController
+import Controllers.PartitionController as PartitionController
 
 from Controllers.InterfaceController.Helpers.SanitizeText import SanitizeText
 
@@ -85,9 +85,9 @@ def HandleFolderExpansion(
         return index
 
     # Get the folder's descendants
-    files, subfolders = FileSystemController.GetDescendants(
-        _TYPES.Folder(item.itempath)
-    )
+    files, subfolders = PartitionController.GetItem(
+        item.partitionPath, item.id
+    ).descendants
 
     for subfolder in subfolders:
         # Render the subfolder name
@@ -101,7 +101,8 @@ def HandleFolderExpansion(
             InterfaceData.images["plus"],
             index,
             item.level + 1,
-            subfolder.path,
+            item.partitionPath,
+            subfolder.id,
         )
 
         # Append the folder to current folder's subItems
@@ -113,7 +114,7 @@ def HandleFolderExpansion(
     for file in files:
         # Render the file name
         renderedFileName = InterfaceData.fonts["explorer"].render(
-            SanitizeText(file.name + file.extension), True, (0, 0, 0)
+            SanitizeText(file.name + "." + file.extension), True, (0, 0, 0)
         )
 
         # Get the item, info
@@ -122,7 +123,8 @@ def HandleFolderExpansion(
             None,
             index,
             item.level + 1,
-            file.path,
+            item.partitionPath,
+            file.id,
         )
 
         # Append the file to current folder's subItems

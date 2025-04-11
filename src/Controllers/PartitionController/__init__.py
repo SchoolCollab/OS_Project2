@@ -1,5 +1,5 @@
+from __future__ import annotations
 import Data.Types as _TYPES
-import Controllers.PartitionController.Data.PartitionController_Types as _PARTITION_TYPES
 
 from Controllers.PartitionController.Formats import FAT32, NTFS
 
@@ -9,7 +9,7 @@ import logging as logging
 
 
 class PartitionController:
-    partitions: list[_PARTITION_TYPES.DiskPartition] = []
+    partitions: dict[str, _TYPES.DiskPartition] = {}
 
 
 Data: PartitionController = PartitionController()
@@ -20,7 +20,7 @@ Data: PartitionController = PartitionController()
 """
 
 
-def GetPartitions() -> list[_PARTITION_TYPES.DiskPartition]:
+def GetPartitions() -> list[_TYPES.DiskPartition]:
     """Retrieve all partitions on the disk.
 
     ### Returns
@@ -30,65 +30,103 @@ def GetPartitions() -> list[_PARTITION_TYPES.DiskPartition]:
     if len(Data.partitions) != 0:
         return Data.partitions
 
+    # Initialize an empty list to store partition paths
+    partitionPaths = []
+
     try:
-        # Get the partitions
+        # Iterate through all partitions
         for partition in psutil.disk_partitions():
-            Data.partitions.append(_PARTITION_TYPES.DiskPartition(partition))
+            # Convert the device path (e.g., `C:\`) to the raw device format `\\.\C:`
+            rawDevicePath = (
+                r"\\.\ ".strip() + partition.device[0].replace("\\", "") + ":"
+            )
+            partitionPaths.append(rawDevicePath)
 
     except Exception as e:
-        raise e
+        logging.error(f"Error retrieving partition paths: {e}")
 
-    return Data.partitions
+    # Iterate through the partition paths and create DiskPartition objects
+    for partitionPath in partitionPaths:
+        # Get the format of the partition
+        partitionFormat = IdentifyFileSystem(partitionPath)
 
+        # Create a DiskPartition object and initialize it
+        partition = _TYPES.DiskPartition(partitionFormat, partitionPath)
+        if partitionFormat == "NTFS":
+            partition.home = NTFS.Init(partition)
+        elif partitionFormat == "FAT32":
+            partition.home = FAT32.Init(partition)
+        else:
+            logging.warning(f"Unsupported partition format: {partitionFormat}")
+            continue
 
-def IsFile(filePath: str) -> bool:
-    """Check if a given path points to a file.
+        # Add the partition to the Data dictionary
+        Data.partitions[partitionPath] = partition
 
-    ### Parameters
-    - **filePath** `str`: The path to check.
-
-    ### Returns
-    - `bool`: `True` if the path points to a file, `False` otherwise.
-    """
-    return os.path.isfile(filePath)
-
-
-def IsDir(dirPath: str) -> bool:
-    """Check if a given path points to a directory.
-
-    ### Parameters
-    - **dirPath** `str`: The path to check.
-
-    ### Returns
-    - `bool`: `True` if the path points to a directory, `False` otherwise.
-    """
-    return os.path.isdir(dirPath)
+    # Return the list of partitions
+    return list(Data.partitions.values())
 
 
-def ListDirContents(path: str) -> tuple[list[str], list[str]]:
-    """List the contents of a directory, including files and sub-folders.
+def IdentifyFileSystem(partitionPath: str) -> str | None:
+    """Identify the file system type of a partition (FAT32 or NTFS).
 
     ### Parameters
-    - **path** `str`: The path of the directory to list.
+    - **partitionPath** `str`: The path to the partition (e.g., `\\.\C:`).
 
     ### Returns
-    - `tuple[list[str], list[str]]`: A tuple containing two lists:
-        - The first list contains the paths of sub-folders.
-        - The second list contains the paths of files.
+    - `str | None`: The file system type (`"FAT32"`, `"NTFS"`, or `None` if unknown).
     """
-    assert IsDir(path), ValueError(f"The provided path is not a directory: {path}")
-
-    dirPaths: list[str] = []
-    filePaths: list[str] = []
-
     try:
-        for entry in os.scandir(path):
-            if entry.is_dir():
-                dirPaths.append(entry.path)
-            elif entry.is_file():
-                filePaths.append(entry.path)
+        # Read the first 512 bytes (VBR)
+        with open(partitionPath, "rb") as f:
+            vbr = f.read(512)
 
-    except Exception as e:
-        logging.error(f"Error listing directory contents for {path}: {e}")
+        # Check for NTFS (OEM Name at offset 0x03)
+        if vbr[3:11].decode("ascii", errors="ignore").strip() == "NTFS":
+            return "NTFS"
 
-    return dirPaths, filePaths
+        # Check for FAT32 (File System Type at offset 0x52)
+        if vbr[82:90].decode("ascii", errors="ignore").strip() == "FAT32":
+            return "FAT32"
+
+        # Unknown file system
+        return "Unsupported"
+
+    except PermissionError:
+        logging.error(
+            f"Permission denied when accessing {partitionPath}. Try running as administrator."
+        )
+        return None
+
+    except OSError as e:
+        logging.error(f"Error accessing {partitionPath}: {e}")
+        return None
+
+
+def GetItem(partitionPath: str, itemId: int) -> _TYPES.File | _TYPES.Folder | None:
+    """Get an item (file or folder) by its ID from a partition.
+
+    ### Parameters
+    - **partitionPath** `str`: The path to the partition (e.g., `\\.\C:`).
+    - **itemId** `int`: The ID of the item.
+
+    ### Returns
+    - `File | Folder | None`: The item (file or folder) if found, or `None` if not found.
+    """
+    # Check if the partition exists in the Data dictionary
+    if partitionPath in Data.partitions:
+        # Get the partition and its format
+        partition = Data.partitions[partitionPath]
+        format = partition.format
+
+        #
+        if format == "NTFS":
+            return NTFS.GetItem(partitionPath, itemId)
+        elif format == "FAT32":
+            return FAT32.GetItem(partitionPath, itemId)
+
+    logging.warning(f"Item with ID {itemId} not found in {partitionPath}.")
+    return None
+
+
+__all__ = ["Data", "GetPartitions", "GetItem"]

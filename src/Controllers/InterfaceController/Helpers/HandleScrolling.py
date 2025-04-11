@@ -42,62 +42,62 @@ def HandleScrolling(x: int, y: int) -> None:
     - **y** `int`: The y axis scroll value.
     """
     # Handle scrolling in Y axis
-    if y != 0:
-        # Limit the scroll range by getting the last item
-        lastItem = InterfaceData.items[-1]
 
-        while len(lastItem.subItems) > 0:
-            # Get the last sub item
-            lastItem = lastItem.subItems[-1]
+    # Limit the scroll range by getting the last item
+    lastItem = InterfaceData.items[-1]
 
-        # Get the maximum scroll value
-        maxYScroll = lastItem.index * InterfaceData.fontSize * 2
+    while len(lastItem.subItems) > 0:
+        # Get the last sub item
+        lastItem = lastItem.subItems[-1]
 
-        # Update the screen offset
-        InterfaceData.screenOffset = (
-            max(
-                0,
-                min(
-                    InterfaceData.screenOffset[0] - y * InterfaceData.fontSize * 2,
-                    maxYScroll
-                    - InterfaceData.screenResolution[1]
-                    + InterfaceData.fontSize * 4,
-                ),
+    # Get the maximum scroll value
+    maxYScroll = lastItem.index * InterfaceData.fontSize * 2
+
+    # Update the screen offset
+    InterfaceData.screenOffset = (
+        max(
+            0,
+            min(
+                InterfaceData.screenOffset[0] - y * InterfaceData.fontSize * 2,
+                maxYScroll
+                - InterfaceData.screenResolution[1]
+                + InterfaceData.fontSize * 4,
             ),
-            InterfaceData.screenOffset[1],
-        )
+        ),
+        InterfaceData.screenOffset[1],
+    )
 
     # Handle scrolling in X axis
-    if x != 0:
-        # Limit the scroll range by getting the longest item
-        longestItem = InterfaceData.items[0]
 
-        for item in InterfaceData.items:
-            # Get the longest item in the interface
-            item = GetLongestItem(item)
+    # Limit the scroll range by getting the longest item
+    longestItem = InterfaceData.items[0]
 
-            if (
-                item.name.get_width() + item.nameHitbox.left
-                > longestItem.name.get_width() + longestItem.nameHitbox.left
-            ):
-                longestItem = item
+    for item in InterfaceData.items:
+        # Get the longest item in the interface
+        item = GetLongestItem(item)
 
-        # Get the maximum scroll value
-        maxXScroll = longestItem.name.get_width() + longestItem.nameHitbox.left
+        if (
+            item.name.get_width() + item.nameHitbox.left
+            > longestItem.name.get_width() + longestItem.nameHitbox.left
+        ):
+            longestItem = item
 
-        # Update the screen offset
-        InterfaceData.screenOffset = (
-            InterfaceData.screenOffset[0],
-            max(
-                0,
-                min(
-                    InterfaceData.screenOffset[1] - x * InterfaceData.fontSize * 2,
-                    maxXScroll
-                    - InterfaceData.screenResolution[0]
-                    + InterfaceData.fontSize * 4,
-                ),
+    # Get the maximum scroll value
+    maxXScroll = longestItem.name.get_width() + longestItem.nameHitbox.left
+
+    # Update the screen offset
+    InterfaceData.screenOffset = (
+        InterfaceData.screenOffset[0],
+        max(
+            0,
+            min(
+                InterfaceData.screenOffset[1] - x * InterfaceData.fontSize * 2,
+                maxXScroll
+                - InterfaceData.screenResolution[0]
+                + InterfaceData.fontSize * 4,
             ),
-        )
+        ),
+    )
 
 
 __all__ = ["HandleScrolling"]

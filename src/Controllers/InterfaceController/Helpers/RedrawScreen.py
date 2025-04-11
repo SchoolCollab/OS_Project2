@@ -18,7 +18,7 @@ def RedrawScreen() -> None:
         Utilities.DrawItem(item)
 
     # Update the display
-    pygame.display.update()
+    pygame.display.flip()
 
 
 __all__ = ["RedrawScreen"]

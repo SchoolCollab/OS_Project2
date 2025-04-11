@@ -14,7 +14,7 @@ class Date:
         """Constructs all the necessary attributes for the date object.
 
         ### Parameters
-        - **date** `datetime.date`: The date object from the `datetime` module.
+        - **date** `date`: The date object from the **datetime** module.
         """
         self.year: int = date.year
         self.month: int = date.month
@@ -24,7 +24,7 @@ class Date:
         """Returns the string representation of the date object.
 
         ### Returns
-        - **str**: The string representation in the format `day/month/year`.
+        - `str`: The string representation in the format `day/month/year`.
         """
         return f"{self.day}/{self.month}/{self.year}"
 
@@ -43,7 +43,7 @@ class Time:
         """Constructs all the necessary attributes for the time object.
 
         ### Parameters
-        - **time** `datetime.time`: The time object from the `datetime` module.
+        - **time** `time`: The time object from the **datetime** module.
         """
         self.hour: int = time.hour
         self.minute: int = time.minute
@@ -54,7 +54,7 @@ class Time:
         """Returns the string representation of the time object.
 
         ### Returns
-        - **str**: The string representation in the format `hour:minute:second`.
+        - `str`: The string representation in the format `hour:minute:second:microsecond`.
         """
         return f"{self.hour}:{self.minute}:{self.second}:{self.microsecond}"
 
@@ -63,15 +63,15 @@ class DateTime:
     """A class to represent a datetime.
 
     ### Attributes
-    - **date** `_TYPES.Date`: The date part of the datetime.
-    - **time** `_TYPES.Time`: The time part of the datetime.
+    - **date** `Date`: The date part of the datetime.
+    - **time** `Time`: The time part of the datetime.
     """
 
     def __init__(self, datetime: datetime):
         """Constructs all the necessary attributes for the datetime object.
 
         ### Parameters
-        - **datetime** `datetime.datetime`: The datetime object from the `datetime` module.
+        - **datetime** `datetime`: The datetime object from the **datetime** module.
         """
         self.date: Date = Date(datetime.date())
         self.time: Time = Time(datetime.time())
@@ -80,7 +80,7 @@ class DateTime:
         """Returns the string representation of the datetime object.
 
         ### Returns
-        - **str**: The string representation in the format `day/month/year - hour:minute:second`.
+        - `str`: The string representation in the format `day/month/year - hour:minute:second:microsecond`.
         """
         return f"{str(self.date)} - {str(self.time)}"
 

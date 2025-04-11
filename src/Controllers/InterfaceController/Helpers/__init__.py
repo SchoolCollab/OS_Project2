@@ -5,9 +5,6 @@ from Controllers.InterfaceController.Helpers.HandleFolderExpansion import (
 from Controllers.InterfaceController.Helpers.HandleItemPropertyShowing import (
     HandleItemPropertyShowing,
 )
-from Controllers.InterfaceController.Helpers.InitPropertyWindow import (
-    InitPropertyWindow,
-)
 from Controllers.InterfaceController.Helpers.HandleScrolling import HandleScrolling
 from Controllers.InterfaceController.Helpers.RedrawScreen import RedrawScreen
 
@@ -15,7 +12,6 @@ __all__ = [
     "SanitizeText",
     "HandleFolderExpansion",
     "HandleItemPropertyShowing",
-    "InitPropertyWindow",
     "HandleScrolling",
     "RedrawScreen",
 ]

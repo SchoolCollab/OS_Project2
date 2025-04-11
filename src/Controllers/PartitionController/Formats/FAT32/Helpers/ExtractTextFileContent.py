@@ -30,9 +30,7 @@ def ExtractTxtContent(
     content = ""
 
     # Get the cluster chain for the file
-    clusters = ReadClusterChain(
-        volume, fatData, entry["cluster"], dataRegionOffset, clusterSize
-    )
+    clusters = ReadClusterChain(fatData, entry["cluster"])
 
     # Read and decode the content of each cluster
     for cluster in clusters:

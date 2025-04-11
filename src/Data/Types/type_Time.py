@@ -16,9 +16,14 @@ class Date:
         ### Parameters
         - **date** `date`: The date object from the **datetime** module.
         """
-        self.year: int = date.year
-        self.month: int = date.month
-        self.day: int = date.day
+        if date is None:
+            self.year: int = 0
+            self.month: int = 0
+            self.day: int = 0
+        else:
+            self.year: int = date.year
+            self.month: int = date.month
+            self.day: int = date.day
 
     def __str__(self):
         """Returns the string representation of the date object.
@@ -36,7 +41,6 @@ class Time:
     - **hour** `int`: The hour of the time.
     - **minute** `int`: The minute of the time.
     - **second** `int`: The second of the time.
-    - **microsecond** `int`: The microsecond of the time.
     """
 
     def __init__(self, time: time):
@@ -45,18 +49,22 @@ class Time:
         ### Parameters
         - **time** `time`: The time object from the **datetime** module.
         """
-        self.hour: int = time.hour
-        self.minute: int = time.minute
-        self.second: int = time.second
-        self.microsecond: int = time.microsecond
+        if time is None:
+            self.hour: int = 0
+            self.minute: int = 0
+            self.second: int = 0
+        else:
+            self.hour: int = time.hour
+            self.minute: int = time.minute
+            self.second: int = time.second
 
     def __str__(self):
         """Returns the string representation of the time object.
 
         ### Returns
-        - `str`: The string representation in the format `hour:minute:second:microsecond`.
+        - `str`: The string representation in the format `hour:minute:second`.
         """
-        return f"{self.hour}:{self.minute}:{self.second}:{self.microsecond}"
+        return f"{self.hour}:{self.minute}:{self.second}"
 
 
 class DateTime:
@@ -73,14 +81,14 @@ class DateTime:
         ### Parameters
         - **datetime** `datetime`: The datetime object from the **datetime** module.
         """
-        self.date: Date = Date(datetime.date())
-        self.time: Time = Time(datetime.time())
+        self.date: Date = Date(datetime and datetime.date() or None)
+        self.time: Time = Time(datetime and datetime.time() or None)
 
     def __str__(self):
         """Returns the string representation of the datetime object.
 
         ### Returns
-        - `str`: The string representation in the format `day/month/year - hour:minute:second:microsecond`.
+        - `str`: The string representation in the format `day/month/year - hour:minute:second`.
         """
         return f"{str(self.date)} - {str(self.time)}"
 

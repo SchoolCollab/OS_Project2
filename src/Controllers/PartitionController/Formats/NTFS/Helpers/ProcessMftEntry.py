@@ -77,19 +77,6 @@ def ParseMftEntry(
                 metadata.update(fileNameMetadata)
 
         elif attributeType == 0x80:  # $DATA
-            # Skip parsing data for directories and non-text files
-            if (
-                metadata["isDirectory"]
-                or metadata["name"] == None
-                or not metadata["name"].endswith(".txt")
-            ):
-                # Leave the data as None
-                metadata["data"] = None
-
-                # Move to the next attribute
-                currentOffset += attributeLength
-                continue
-
             isNonResident = struct.unpack_from("<B", mftEntryData, currentOffset + 8)[0]
             if isNonResident == 0:  # Resident data
                 # Read the size and offset of the data
@@ -131,7 +118,11 @@ def ParseMftEntry(
                         if metadata["creationDateTime"]
                         else datetime.now()
                     ),
-                    metadata["data"] if metadata["name"].endswith(".txt") else None,
+                    (
+                        metadata["data"].decode("utf-8", errors="ignore")
+                        if metadata["name"].endswith(".txt") and metadata.get("data")
+                        else None
+                    ),
                 ),
                 metadata["parent"],
             )

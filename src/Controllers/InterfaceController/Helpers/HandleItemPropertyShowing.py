@@ -120,26 +120,32 @@ def InitPropertyWindow(
     renderedProperties: list[_INTERFACE_TYPES.Surface] = []
     renderedContent: list[_INTERFACE_TYPES.Surface] = []
 
-    # Render text for the properties or content
+    # Render text for the properties
     for prop in properties:
         renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))
         renderedProperties.append(renderedText)
 
-    for line in content.split("\n"):
-        # Split the line if it exceeds the width of the window
-        while font.size(SanitizeText(line))[0] > resolution[0] - 30:
-            # Find the index to split the line
-            splitIndex = 0
-            while font.size(SanitizeText(line[:splitIndex]))[0] < resolution[0] - 30:
-                splitIndex += 1
+    # Render text for the content if available
+    if content is not None:
+        for line in content.split("\n"):
+            # Split the line if it exceeds the width of the window
+            while font.size(SanitizeText(line))[0] > resolution[0] - 30:
+                # Find the index to split the line
+                splitIndex = 0
+                while (
+                    font.size(SanitizeText(line[:splitIndex]))[0] < resolution[0] - 30
+                ):
+                    splitIndex += 1
 
-            renderedText = font.render(SanitizeText(line[:splitIndex]), True, (0, 0, 0))
+                renderedText = font.render(
+                    SanitizeText(line[:splitIndex]), True, (0, 0, 0)
+                )
+                renderedContent.append(renderedText)
+
+                line = line[splitIndex:]
+
+            renderedText = font.render(SanitizeText(line), True, (0, 0, 0))
             renderedContent.append(renderedText)
-
-            line = line[splitIndex:]
-
-        renderedText = font.render(SanitizeText(line), True, (0, 0, 0))
-        renderedContent.append(renderedText)
 
     # Display the properties or content
     def display():

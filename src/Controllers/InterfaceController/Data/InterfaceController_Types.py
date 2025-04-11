@@ -31,7 +31,7 @@ class ItemDrawInfo:
     - **level** `int`: The level(depth) of the item.
     - **nameHitbox** `Rect`: The hitbox of the name.
     - **iconHitbox** `Rect`: The hitbox of the icon.
-    - **itempath** `str`: The path of the item.
+    - **id** `int`: The ID of the item.
     - **subItems** `list[ItemDrawInfo]`: The subitems of the current item.
     """
 
@@ -41,7 +41,8 @@ class ItemDrawInfo:
         icon: Surface,
         index: int,
         level: int,
-        itempath: str,
+        partitionPath: str,
+        id: int,
     ):
         """Constructs the DrawInfo for an item.
 
@@ -50,7 +51,8 @@ class ItemDrawInfo:
         - **icon** `Surface`: The expansion/collapse icon if item is a folder.
         - **index** `int`: The index(row) of the item.
         - **level** `int`: The level(depth) of the item.
-        - **itempath** `str`: The path of the item represented by this line.
+        - **partitionPath** `str`: The path of the partition this item belongs to.
+        - **id** `int`: The ID of the item.
         """
         # Set the index and level
         self.index: int = index
@@ -81,7 +83,9 @@ class ItemDrawInfo:
             else None
         )
 
-        self.itempath: str = itempath
+        self.partitionPath: str = partitionPath
+        self.id: int = id
+
         self.subItems: list[ItemDrawInfo] = []
 
     def Move(self, index: int, level: int = None) -> None:

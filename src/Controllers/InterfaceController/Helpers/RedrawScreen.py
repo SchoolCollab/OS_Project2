@@ -1,4 +1,3 @@
-import os as os
 import pygame as pygame
 
 import Controllers.InterfaceController.Utilities as Utilities

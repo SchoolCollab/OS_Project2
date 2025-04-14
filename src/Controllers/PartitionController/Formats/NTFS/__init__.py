@@ -10,8 +10,9 @@ import Controllers.PartitionController.Formats.NTFS.Helpers as NftsHelpers
 class NTFS:
     """Data for a NTFS disk."""
 
-    Files: dict[int, _TYPES.File] = {}
-    Folders: dict[int, _TYPES.Folder] = {}
+    def __init__(self) -> None:
+        self.Files: dict[int, _TYPES.File] = {}
+        self.Folders: dict[int, _TYPES.Folder] = {}
 
 
 Data: dict[str, NTFS] = {}
@@ -36,10 +37,10 @@ allFolders = ntfsDisk.Folders
 
 def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
     """Initialize the NTFS partition and parse its Master File Table (MFT) to extract file and folder information.
-\
+
     ### Parameters
     - **partition** `DiskPartition`: The partition to initialize.
-   
+
     ### Returns
     - `Folder`: The root folder of the NTFS partition.
     """
@@ -52,13 +53,13 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
     if partitionPath not in Data:
         Data[partitionPath] = NTFS()
 
-    with open(partitionPath, "rb") as mft:
+    with open(partitionPath, "rb") as volume:
         # Get MFT offset and entry size for provided partition
-        MftOffset, MftEntrySize = NftsHelpers.ReadVbrData(mft)
+        MftOffset, MftEntrySize, clusterSize = NftsHelpers.ReadVbrData(volume)
 
         # Get MFT size
         MftEntry0Data = PartitionControllerHelpers.ReadBytes(
-            mft, MftOffset, MftEntrySize
+            volume, MftOffset, MftEntrySize
         )
         MftSize = NftsHelpers.GetMftSize(MftEntry0Data)
 
@@ -73,10 +74,10 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
             # Read each MFT entry
             entryOffset = MftOffset + i * MftEntrySize
             MftEntryData = PartitionControllerHelpers.ReadBytes(
-                mft, entryOffset, MftEntrySize
+                volume, entryOffset, MftEntrySize
             )
             # Parse the entry
-            result = NftsHelpers.ParseMftEntry(MftEntryData)
+            result = NftsHelpers.ParseMftEntry(volume, MftEntryData, clusterSize)
 
             # Skip if the result is None (e.g., deleted or invalid entry)
             if result is None:
@@ -114,7 +115,9 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
                     Data[partitionPath].Folders[
                         i
                     ].creationDateTime = item.creationDateTime
+
                 else:
+                    # Add the new folder to the Folders dictionary
                     Data[partitionPath].Folders[i] = item
 
                 # Add the folder to its parent's descendants
@@ -122,6 +125,7 @@ def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
                     Data[partitionPath].Folders[parentId].descendants.folders.append(
                         item
                     )
+
     # Rename the root folder to match the partition's mount point
     Data[partitionPath].Folders[5].name = partition.mountPoint
 

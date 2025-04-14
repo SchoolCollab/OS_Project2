@@ -1,21 +1,25 @@
 from __future__ import annotations
 import Data.Types as _TYPES
 
+import io as io
 import struct as struct
 import logging as logging
 from datetime import datetime
 
-global i
-i = 0
+import Controllers.PartitionController.Helpers as PartitionControllerHelpers
 
 
 def ParseMftEntry(
+    volume: io.BufferedReader,
     mftEntryData: bytes,
+    clusterSize: int,
 ) -> tuple[_TYPES.Folder | _TYPES.File, int] | None:
     """Parse an MFT entry to extract file or folder metadata.
 
     ### Parameters
+    - **volume** `BufferedReader`: The volume to read from.
     - **mftEntryData** `bytes`: The raw bytes of the MFT entry.
+    - **clusterSize** `int`: The size of a cluster in bytes.
 
     ### Returns
     - `tuple[Folder | File, int] | None`: A tuple containing a `Folder` or `File` object and its parent's ID, or `None` if parsing fails.
@@ -31,6 +35,7 @@ def ParseMftEntry(
         "size": 0,
         "creationDateTime": None,
         "data": None,
+        "dataRuns": None,
         "parent": None,
     }
 
@@ -78,6 +83,7 @@ def ParseMftEntry(
 
         elif attributeType == 0x80:  # $DATA
             isNonResident = struct.unpack_from("<B", mftEntryData, currentOffset + 8)[0]
+
             if isNonResident == 0:  # Resident data
                 # Read the size and offset of the data
                 dataSize = struct.unpack_from("<I", mftEntryData, currentOffset + 16)[0]
@@ -88,6 +94,21 @@ def ParseMftEntry(
 
                 # Extract the data from the MFT entry
                 metadata["data"] = mftEntryData[dataOffset : dataOffset + dataSize]
+
+            else:  # Non-resident data, the header contains the data runs and sizes
+                # Get the data runs
+                dataRunsOffset = (
+                    struct.unpack_from("<H", mftEntryData, currentOffset + 32)[0]
+                    + currentOffset
+                )
+                metadata["dataRuns"] = mftEntryData[
+                    dataRunsOffset : currentOffset + attributeLength
+                ]
+
+                # Use the real file size field located at offset 48 (0x30)
+                metadata["size"] = struct.unpack_from(
+                    "<Q", mftEntryData, currentOffset + 0x30
+                )[0]
 
         # Move to the next attribute
         currentOffset += attributeLength
@@ -108,6 +129,22 @@ def ParseMftEntry(
                 metadata["parent"],
             )
         else:
+            # Get the file data if available
+            content: bytes = None
+
+            if metadata["name"].endswith(".txt"):
+                if metadata.get("data"):
+                    content = metadata["data"]
+                elif metadata.get("dataRuns"):
+                    content = parseDataRuns(
+                        volume, metadata["dataRuns"], clusterSize, metadata["size"]
+                    )
+
+            # If the content is not None, decode it to a string
+            # and remove null characters
+            if content is not None:
+                content = content.decode("utf-8", errors="ignore").replace("\x00", "")
+
             return (
                 _TYPES.File(
                     0,
@@ -118,11 +155,7 @@ def ParseMftEntry(
                         if metadata["creationDateTime"]
                         else datetime.now()
                     ),
-                    (
-                        metadata["data"].decode("utf-8", errors="ignore")
-                        if metadata["name"].endswith(".txt") and metadata.get("data")
-                        else None
-                    ),
+                    content,
                 ),
                 metadata["parent"],
             )
@@ -203,6 +236,100 @@ def extractFileNameMetadata(attributeContent: bytes) -> dict[str, any] | None:
     except Exception as e:
         logging.error(f"Error parsing FILE_NAME attribute: {e}")
         return None
+
+
+def parseDataRuns(
+    volume: io.BufferedReader, dataRuns: bytes, clusterSize: int, fileSize: int
+) -> bytes:
+    """
+    Parse the data runs from a non-resident $DATA attribute.
+
+    ### Parameters
+    - **volume** `BufferedReader`: The volume to read from.
+    - **dataRuns** `bytes`: The raw bytes of the data runs.
+    - **clusterSize** `int`: The size of a cluster in bytes.
+    - **fileSize** `int`: The actual size of the file in bytes.
+
+    ### Returns
+    - `bytes`: The concatenated data read from the volume based on the data runs.
+    """
+    # Initialize an empty byte array to store the data
+    data: bytes = b""
+
+    # Initialize the current index for reading data runs
+    currentIndex = 0
+    # Tracks the previous cluster offset for relative addressing
+    previousOffset = 0
+
+    # Track how many bytes are left to read
+    bytesRemaining = fileSize
+
+    try:
+        while currentIndex < len(dataRuns):
+            header = dataRuns[currentIndex]
+            if header == 0x00:  # End of data runs
+                break
+
+            # Extract the sizes of the length and offset fields
+            lengthSize = header & 0x0F
+            offsetSize = (header >> 4) & 0x0F
+
+            currentIndex += 1
+
+            # Ensure the sizes are valid
+            if currentIndex + lengthSize + offsetSize > len(dataRuns):
+                logging.error("Data run header exceeds available data length.")
+                break
+
+            # Extract the length (number of clusters in the run)
+            runLength = int.from_bytes(
+                dataRuns[currentIndex : currentIndex + lengthSize], byteorder="little"
+            )
+            currentIndex += lengthSize
+
+            # Extract the offset (relative to the previous run)
+            rawOffset = int.from_bytes(
+                dataRuns[currentIndex : currentIndex + offsetSize],
+                byteorder="little",
+                signed=True,
+            )
+
+            currentIndex += offsetSize
+
+            # Calculate the absolute cluster offset
+            previousOffset += rawOffset
+
+            # Read the data from the volume
+            for i in range(runLength):
+                # Calculate the absolute offset in bytes
+                absoluteOffset = (previousOffset + i) * clusterSize
+
+                # Determine how many bytes to read (don't exceed file size)
+                bytesToRead = min(clusterSize, bytesRemaining)
+
+                # Read the data from the volume
+                clusterData = PartitionControllerHelpers.ReadBytes(
+                    volume, absoluteOffset, bytesToRead
+                )
+
+                # Append the cluster data to the result
+                data += clusterData
+
+                # Decrease the remaining bytes to read
+                bytesRemaining -= bytesToRead
+
+                # Stop reading if we've read the entire file
+                if bytesRemaining <= 0:
+                    break
+
+            # Stop processing further data runs if we've read the entire file
+            if bytesRemaining <= 0:
+                break
+
+    except Exception as e:
+        logging.error(f"Error parsing data runs: {e}")
+
+    return data
 
 
 __all__ = [

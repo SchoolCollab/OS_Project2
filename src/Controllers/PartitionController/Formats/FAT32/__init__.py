@@ -12,9 +12,10 @@ import Controllers.PartitionController.Formats.FAT32.Helpers as Fat32Helpers
 class FAT32:
     """Data for a FAT32 disk."""
 
-    itemCount = 0
-    files: dict[int, _TYPES.File] = {}
-    folders: dict[int, _TYPES.Folder] = {}
+    def __init__(self) -> None:
+        self.itemCount = 0
+        self.files: dict[int, _TYPES.File] = {}
+        self.folders: dict[int, _TYPES.Folder] = {}
 
 
 Data: dict[str, FAT32] = {}

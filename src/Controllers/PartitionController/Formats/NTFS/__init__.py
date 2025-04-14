@@ -10,8 +10,9 @@ import Controllers.PartitionController.Formats.NTFS.Helpers as NftsHelpers
 class NTFS:
     """Data for a NTFS disk."""
 
-    Files: dict[int, _TYPES.File] = {}
-    Folders: dict[int, _TYPES.Folder] = {}
+    def __init__(self) -> None:
+        self.Files: dict[int, _TYPES.File] = {}
+        self.Folders: dict[int, _TYPES.Folder] = {}
 
 
 Data: dict[str, NTFS] = {}
@@ -36,10 +37,10 @@ allFolders = ntfsDisk.Folders
 
 def Init(partition: _TYPES.DiskPartition) -> _TYPES.Folder:
     """Initialize the NTFS partition and parse its Master File Table (MFT) to extract file and folder information.
-\
+
     ### Parameters
     - **partition** `DiskPartition`: The partition to initialize.
-   
+
     ### Returns
     - `Folder`: The root folder of the NTFS partition.
     """

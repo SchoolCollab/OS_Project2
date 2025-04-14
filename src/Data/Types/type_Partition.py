@@ -1,10 +1,7 @@
 from __future__ import annotations
 import Data.Types.type_Time as Time
 
-import os as os
 import datetime as datetime
-
-import Controllers.PartitionController as PartitionController
 
 
 class File:

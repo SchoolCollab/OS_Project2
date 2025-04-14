@@ -5,7 +5,6 @@ from Controllers.InterfaceController.Data import (
 
 import os as os
 import pygame as pygame
-from threading import Thread, Event
 import multiprocessing as multiprocessing
 
 import Controllers.PartitionController as PartitionController
@@ -148,17 +147,8 @@ def InitPropertyWindow(
             renderedText = font.render(SanitizeText(line), True, (0, 0, 0))
             renderedContent.append(renderedText)
 
-    def calculateMaxScroll() -> int:
-        """Calculate the maximum scroll offset based on the content."""
-        return max(0, len(renderedContent) * fontSize * 2 - resolution[1])
-
-    # Initialize scrolling variables
-    scrollOffset = 0
-    maxScroll = calculateMaxScroll()
-    scrollingEvents = {"up": Event(), "down": Event()}
-
+    # Display the properties or content
     def display():
-        """Render the properties or content."""
         surface.fill((200, 200, 200))  # Clear the surface
 
         if isShowingProperties:
@@ -174,37 +164,16 @@ def InitPropertyWindow(
 
         else:
             for i, line in enumerate(renderedContent):
-                yPosition = i * fontSize * 2 - scrollOffset
+                surface.blit(line, (20, i * fontSize * 2 + fontSize))
 
-                if 0 <= yPosition < resolution[1]:  # Only render visible lines
-                    surface.blit(line, (20, yPosition))
-
+        # Update the display
         pygame.display.flip()
-
-    def handleScrolling(direction: str, scrollValue: int):
-        """Handle smooth scrolling in a specific direction."""
-        initialWait = 100
-
-        while scrollingEvents[direction].is_set():
-            # Calculate the scroll offset
-            nonlocal scrollOffset
-            scrollOffset = max(0, min(scrollOffset + scrollValue, maxScroll))
-
-            # Update the display
-            display()
-
-            initialWait = max(
-                5, initialWait - 10
-            )  # Reduce wait time for smoother scrolling
-
-            pygame.time.wait(initialWait)
 
     # Render the initial display
     display()
 
     # Wait for the user to close the window
     running = True
-    scrollingThreads = {"up": None, "down": None}
 
     # Handle events for property window
     while running:
@@ -216,49 +185,13 @@ def InitPropertyWindow(
                 # Redraw the surface if the window is resized
                 display()
 
-            elif event.type == pygame.MOUSEWHEEL:
-                # Adjust the scroll offset based on the mouse wheel
-                scrollOffset -= event.y * fontSize * 2
-                scrollOffset = max(0, min(scrollOffset, maxScroll))
-
-                display()
-
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-
-                elif event.key == pygame.K_TAB and content is not None:
+                elif event.key == pygame.K_TAB and content != None:
                     # Toggle between properties and content
                     isShowingProperties = not isShowingProperties
-                    scrollOffset = 0  # Reset scroll offset
-
-                    # Recalculate max scroll and display
-                    calculateMaxScroll()
                     display()
-
-                elif event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-                    # Start scrolling thread for UP or DOWN
-                    direction = "up" if event.key == pygame.K_UP else "down"
-                    scrollValue = -fontSize * 2 if direction == "up" else fontSize * 2
-
-                    if not scrollingEvents[direction].is_set():
-                        # Set the event to start scrolling
-                        scrollingEvents[direction].set()
-
-                        # Start the scrolling thread
-                        scrollingThreads[direction] = Thread(
-                            target=handleScrolling, args=(direction, scrollValue)
-                        )
-                        scrollingThreads[direction].start()
-
-            elif event.type == pygame.KEYUP:
-                if event.key in (pygame.K_UP, pygame.K_DOWN):
-                    # Stop scrolling thread for UP or DOWN
-                    direction = "up" if event.key == pygame.K_UP else "down"
-                    scrollingEvents[direction].clear()
-
-                    if scrollingThreads[direction] is not None:
-                        scrollingThreads[direction].join()
 
     # Quit pygame
     pygame.quit()

@@ -3,6 +3,7 @@ import Data.Types as _TYPES
 
 from Controllers.PartitionController.Formats import FAT32, NTFS
 
+import os as os
 import psutil as psutil
 import logging as logging
 
@@ -37,7 +38,7 @@ def GetPartitions() -> list[_TYPES.DiskPartition]:
         for partition in psutil.disk_partitions():
             # Convert the device path (e.g., `C:\`) to the raw device format `\\.\C:`
             rawDevicePath = (
-                r"\\.\  ".rstrip() + partition.device[0].replace(r"\\", "") + ":"
+                r"\\.\ ".strip() + partition.device[0].replace("\\", "") + ":"
             )
             partitionPaths.append(rawDevicePath)
 

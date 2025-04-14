@@ -50,7 +50,7 @@ def HandleItemPropertyShowing(
             target=InitPropertyWindow,
             args=(
                 InterfaceData.screenResolution,
-                os.path.join(InterfaceData.dataPath, "Fonts", "font_property.ttf"),
+                os.path.join(InterfaceData.dataPath, "Fonts"),
                 InterfaceData.fontSize,
                 PartitionController.GetItem(item.partitionPath, item.id),
             ),
@@ -90,7 +90,12 @@ def InitPropertyWindow(
     surface.fill((200, 200, 200))  # Light gray background
 
     # Load the font
-    font: _INTERFACE_TYPES.Font = pygame.font.Font(fontPath, fontSize)
+    propertyFont: _INTERFACE_TYPES.Font = pygame.font.Font(
+        os.path.join(fontPath, "font_property.ttf"), fontSize
+    )
+    textFont: _INTERFACE_TYPES.Font = pygame.font.Font(
+        os.path.join(fontPath, "font_text.ttf"), fontSize
+    )
 
     # Prepare the properties to display
     properties = []
@@ -123,29 +128,28 @@ def InitPropertyWindow(
 
     # Render text for the properties
     for prop in properties:
-        renderedText = font.render(SanitizeText(prop), True, (0, 0, 0))
+        renderedText = propertyFont.render(SanitizeText(prop), True, (0, 0, 0))
         renderedProperties.append(renderedText)
 
     # Render text for the content if available
     if content is not None:
         for line in content.split("\n"):
+            # Replace \t with spaces
+            line = line.replace("\t", " " * 4)
+
             # Split the line if it exceeds the width of the window
-            while font.size(SanitizeText(line))[0] > resolution[0] - 30:
+            while textFont.size(line)[0] > resolution[0] - 30:
                 # Find the index to split the line
                 splitIndex = 0
-                while (
-                    font.size(SanitizeText(line[:splitIndex]))[0] < resolution[0] - 30
-                ):
+                while textFont.size(line[:splitIndex])[0] < resolution[0] - 30:
                     splitIndex += 1
 
-                renderedText = font.render(
-                    SanitizeText(line[:splitIndex]), True, (0, 0, 0)
-                )
+                renderedText = textFont.render(line[:splitIndex], True, (0, 0, 0))
                 renderedContent.append(renderedText)
 
                 line = line[splitIndex:]
 
-            renderedText = font.render(SanitizeText(line), True, (0, 0, 0))
+            renderedText = textFont.render(line, True, (0, 0, 0))
             renderedContent.append(renderedText)
 
     def calculateMaxScroll() -> int:
@@ -167,7 +171,7 @@ def InitPropertyWindow(
 
             # Add a toggle message if content is available
             if content is not None:
-                toggleMessage = font.render(
+                toggleMessage = propertyFont.render(
                     "Press TAB to view content", True, (0, 0, 0)
                 )
                 surface.blit(toggleMessage, (20, resolution[1] - fontSize * 2))

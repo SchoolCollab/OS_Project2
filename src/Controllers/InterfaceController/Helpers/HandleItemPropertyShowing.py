@@ -134,10 +134,6 @@ def InitPropertyWindow(
     # Render text for the content if available
     if content is not None:
         for line in content.split("\n"):
-            # Replace emtry lines with a space
-            if not line or line == "":
-                line = " "
-
             # Replace \t with spaces
             line = line.replace("\t", " " * 4)
 
@@ -148,12 +144,21 @@ def InitPropertyWindow(
                 while textFont.size(line[:splitIndex])[0] < resolution[0] - 30:
                     splitIndex += 1
 
-                renderedText = textFont.render(line[:splitIndex], True, (0, 0, 0))
+                try:
+                    renderedText = textFont.render(line[:splitIndex], True, (0, 0, 0))
+                except:
+                    # Handle empty lines or errors in rendering
+                    renderedText = textFont.render(" ", True, (0, 0, 0))
+
                 renderedContent.append(renderedText)
 
                 line = line[splitIndex:]
+            try:
+                renderedText = textFont.render(line, True, (0, 0, 0))
+            except:
+                # Handle empty lines or errors in rendering
+                renderedText = textFont.render(" ", True, (0, 0, 0))
 
-            renderedText = textFont.render(line, True, (0, 0, 0))
             renderedContent.append(renderedText)
 
     def calculateMaxScroll() -> int:

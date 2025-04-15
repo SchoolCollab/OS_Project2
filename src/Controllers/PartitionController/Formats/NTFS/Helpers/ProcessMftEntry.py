@@ -93,22 +93,31 @@ def ParseMftEntry(
                 )
 
                 # Extract the data from the MFT entry
-                metadata["data"] = mftEntryData[dataOffset : dataOffset + dataSize]
+                data = mftEntryData[dataOffset : dataOffset + dataSize]
 
-            else:  # Non-resident data, the header contains the data runs and sizes
-                # Get the data runs
-                dataRunsOffset = (
-                    struct.unpack_from("<H", mftEntryData, currentOffset + 32)[0]
-                    + currentOffset
-                )
-                metadata["dataRuns"] = mftEntryData[
-                    dataRunsOffset : currentOffset + attributeLength
-                ]
+                # Check if the data is a Zone Transfer (Zone Transfer Protocol)
+                if not b"[ZoneTransfer]" in data:
+                    metadata["data"] = data
 
-                # Use the real file size field located at offset 48 (0x30)
-                metadata["size"] = struct.unpack_from(
-                    "<Q", mftEntryData, currentOffset + 0x30
-                )[0]
+                    # Move to next offset
+                    currentOffset += attributeLength
+                    continue
+
+            # Non-resident data, the header contains the data runs and
+
+            # Get the data runs
+            dataRunsOffset = (
+                struct.unpack_from("<H", mftEntryData, currentOffset + 32)[0]
+                + currentOffset
+            )
+            metadata["dataRuns"] = mftEntryData[
+                dataRunsOffset : currentOffset + attributeLength
+            ]
+
+            # Use the real file size field located at offset 48 (0x30)
+            metadata["size"] = struct.unpack_from(
+                "<Q", mftEntryData, currentOffset + 0x30
+            )[0]
 
         # Move to the next attribute
         currentOffset += attributeLength
@@ -273,7 +282,6 @@ def parseDataRuns(
             # Extract the sizes of the length and offset fields
             lengthSize = header & 0x0F
             offsetSize = (header >> 4) & 0x0F
-
             currentIndex += 1
 
             # Ensure the sizes are valid
@@ -293,7 +301,6 @@ def parseDataRuns(
                 byteorder="little",
                 signed=True,
             )
-
             currentIndex += offsetSize
 
             # Calculate the absolute cluster offset

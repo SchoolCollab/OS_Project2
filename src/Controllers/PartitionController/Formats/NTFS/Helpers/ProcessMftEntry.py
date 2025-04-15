@@ -84,7 +84,8 @@ def ParseMftEntry(
         elif attributeType == 0x80:  # $DATA
             isNonResident = struct.unpack_from("<B", mftEntryData, currentOffset + 8)[0]
 
-            if isNonResident == 0:  # Resident data
+            # Resident data
+            if isNonResident == 0:
                 # Read the size and offset of the data
                 dataSize = struct.unpack_from("<I", mftEntryData, currentOffset + 16)[0]
                 dataOffset = (
@@ -114,10 +115,11 @@ def ParseMftEntry(
                 dataRunsOffset : currentOffset + attributeLength
             ]
 
-            # Use the real file size field located at offset 48 (0x30)
-            metadata["size"] = struct.unpack_from(
-                "<Q", mftEntryData, currentOffset + 0x30
-            )[0]
+            if isNonResident == 1:
+                # Use the real file size field located at offset 48 (0x30)
+                metadata["size"] = struct.unpack_from(
+                    "<Q", mftEntryData, currentOffset + 0x30
+                )[0]
 
         # Move to the next attribute
         currentOffset += attributeLength
